@@ -1,0 +1,73 @@
+Tổng quan dự án
+Mục tiêu: Huấn luyện và đánh giá mô hình Text-Based Person Search (TBPS) dựa trên backbone kiểu CLIP/SigLIP, với nhiều mục tiêu huấn luyện (ITC, SDM, CMPM, ID, MLM, …), quản lý bởi Lightning/Hydra/W&B.
+Luồng chính: trainer.py gọi TBPSDataModule (dữ liệu/augment/tokenizer) và LitTBPS (mô hình + loss + metrics), cấu hình optimizer/scheduler, chạy train/val/test, log với W&B và lưu checkpoint.
+Các file chính
+trainer.py
+Khởi tạo Hydra config, seed, xử lý đặc biệt khi bật MLM (mở rộng vocab).
+Tạo TBPSDataModule → train/val/test dataloader.
+Tạo mô hình LitTBPS với số lớp, vocab, num_classes. Hỗ trợ LoRA và “CLIPFIT” (đóng băng/giới hạn các phần backbone).
+Thiết lập callbacks: checkpoint, LR monitor, optional EarlyStopping.
+Chạy validate → fit → test. Khi dùng W&B, log bảng kết quả trực quan từ utils.visualize_test.
+lightning_models.py (lớp LightningModule)
+LitTBPS bọc mô hình lõi TBPS và logic train/val/test + metrics.
+Training: tính alpha soft-label theo bước đầu epoch 0; gọi self.model(batch, alpha, weights), cộng các loss *_loss, log grad-norm.
+Boosting: định kỳ tính “weights” cho các sample sau N epoch bằng cách đo rank trên train features.
+Validation/Test: gom features ảnh/text, tính similarity và các chỉ số R1/R5/R10/mAP/mINP qua utils.metrics.rank/rank2. Test còn thu “wrong predictions” để log hình và câu.
+Hỗ trợ LoRA qua setup_lora. Optimizer và LR scheduler được build từ solver.build.
+lightning_data.py (DataModule)
+Chọn dataset theo tên: CUHKPEDES, ICFGPEDES, RSTPReid, VN3K_*, …
+Tạo tokenizer qua utils.tokenizer_utils.
+Chuẩn bị pool augment ảnh/text từ data/augmentation/* theo config, có self-supervised augment nếu bật loss.SS.
+setup: hỗ trợ lấy subset theo “proportion” với “fold_id”; tạo ImageTextDataset hoặc ImageTextMLMDataset cho train; ImageDataset/TextDataset cho val/test.
+Dataloader: sampler “identity” (RandomIdentitySampler) hoặc “random”; val dùng CombinedLoader mode “max_size”; test “sequential” để tách img trước, text sau (phục vụ ranking).
+model/build.py
+build_backbone_with_proper_layer_resize(backbone_cfg, checkpoint_path=None, state_dict=None):
+Parse lớp backbone và config bằng utils.parse_module_str.
+Nạp checkpoint .bin hoặc .safetensors.
+Tự phát hiện tên tham số embedding vị trí/token của text và image; resize pos/token embedding để khớp kích thước (ảnh dựa trên patch grid từ image_size/patch_size; text dựa vào vocab/seq len).
+Lọc state_dict theo keys cần thiết và load vào model backbone.
+Trả về model backbone có .vision_model, .text_model, và có thể .visual_projection, .text_projection, .logit_scale, .logit_bias.
+model/tbps.py (mô hình TBPS)
+Nhận backbone đã build và tách vision_model, text_model. Có thể freeze từng phần theo config.
+Bật các task theo config.loss: ITC, SDM, CMPM, ID (classifier), MLM (cross-attn + transformer + head), SS (SimCLR MLP), RITC, CITC, NITC, MVS, Ring…
+encode_image/encode_text: trả pooler_output (và optionally last_hidden), kèm projection nếu backbone có.
+forward(batch, alpha, weights):
+Tính embeddings; nếu MLM/Ring cần last_hidden.
+Tùy task, gọi hàm loss trong model.objectives và cộng với trọng số config.
+SDM/CMPM/ITC/ID/MLM/NITC/CITC/RITC đều được hỗ trợ; NITC có soft-label mixing với alpha và phiên bản MVS dùng aug_images.
+forward2 dùng cho boosting: trích nhanh image/text features no-grad.
+data/bases.py
+BaseDataset: helper hiển thị thống kê dataset.
+PreloadedDataset: khung chung cho augment ảnh/text, tokenize bằng transformers tokenizer, hỗ trợ SS augmentation.
+ImageTextDataset: trả về một mẫu gồm images, aug_images, caption_*, pids, image_ids, optional ss_images1/2.
+ImageDataset: chỉ ảnh cho split img của val/test.
+TextDataset: chỉ text cho split text của val/test.
+ImageTextMLMDataset: như ImageTextDataset nhưng thêm mlm_input_ids/attention_mask và mlm_labels với masking 80/10/10.
+solver/build.py
+build_optimizer: tạo các nhóm tham số theo param_groups (match bằng substring tên tham số), mỗi nhóm có LR riêng. Phần còn lại vào nhóm default. Tạo optimizer bằng tên lớp từ chuỗi (parse dyn).
+build_lr_scheduler: tạo scheduler từ solver.lr_scheduler theo config.
+solver/lr_scheduler.py
+LRSchedulerWithWarmup: scheduler theo iteration với warmup (constant/linear) và các mode: step/exp/poly/cosine/linear/constant. Hỗ trợ nhiều param groups với start_lr/end_lr giữ tỉ lệ LR giữa nhóm xuyên suốt.
+model/objectives.py
+Tập hợp loss:
+compute_itc: InfoNCE hai chiều.
+compute_sdm: Similarity Distribution Matching + optional boosting weights.
+compute_cmpm: CMPM loss.
+compute_id: CE cho image/text logits (weighted option).
+compute_mlm: CE cho MLM.
+compute_citc: cyclic consistency giữa i2i/t2t và i2t/t2i.
+compute_ritc: reverse ITC dựa trên mục tiêu phân phối.
+compute_constrative: NITC với soft-label mixing theo alpha, optional sigmoid, hỗ trợ weights.
+compute_simclr: NT-Xent cho self-supervised image aug pairs.
+
+Thư mục/dải file liên quan
+model/clip/* và model/siglip/*: các lớp/tiện ích để tương thích mô hình CLIP/SigLIP với HuggingFace (configuration, modeling, processing, convert).
+data/*.py: các loader cụ thể cho từng dataset (CUHK, ICFG, RSTPReid, VN3K_…), sampler theo identity.
+data/augmentation/*: pipeline augment ảnh/text, EDA, custom transforms.
+utils/*: logger, iotools (đọc ảnh), metrics (rank/mAP/mINP), visualize, tokenizer utils, layer resize, parse class từ chuỗi.
+extract_backbone_from_ckpt.py, prepare_checkpoints.py, cleanup_ckpt.py: tiện ích quản lý checkpoint/backbone.
+test.py, test/loss.py: script kiểm thử.
+Cần mình giải thích chi tiết file nào tiếp theo?
+Mình đã đi qua pipeline chính. Hãy cho biết bạn muốn đào sâu file/directory nào (ví dụ model/siglip/modeling_siglip.py, data/vn3k_mixed.py, hay utils/metrics.py).
+I found and read the core training, model, data, and loss modules. If you want, I’ll open and summarize any remaining .py you care about next.
+

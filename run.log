@@ -1,0 +1,43 @@
+CUHK-PEDES
+[2025-09-15 14:57:07,085][data.bases][INFO] - => CUHK-PEDES Images and Captions are loaded
+[2025-09-15 14:57:07,086][data.bases][INFO] - CUHKPEDES Dataset statistics:
+[2025-09-15 14:57:07,087][data.bases][INFO] - 
++--------+-------+--------+----------+
+| subset |  ids  | images | captions |
++--------+-------+--------+----------+
+| train  | 11003 | 34054  |  68126   |
+|  test  |  1000 |  3074  |   6156   |
+|  val   |  1000 |  3078  |   6158   |
++--------+-------+--------+----------+
+[2025-09-15 14:57:08,584][data.augmentation.transform][INFO] - Using image augmentation: [PILResize(), ToTensor(), ColorJitter(brightness=(0.9, 1.1), contrast=(0.9, 1.1), saturation=(0.9, 1.1), hue=None), RandomRotation(degrees=[-15.0, 15.0], interpolation=nearest, expand=False, fill=0), RandomResizedCrop(size=(256, 256), scale=(0.9, 1.0), ratio=(0.75, 1.3333), interpolation=bilinear, antialias=True), RandomGrayscale(p=0.1), RandomHorizontalFlip(p=0.5), RandomErasing(p=0.5, scale=(0.1, 0.2), ratio=(0.3, 3.3), value=0, inplace=False), Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))] for training.
+[2025-09-15 14:57:08,710][data.augmentation.transform][INFO] - Using text augmentation: [functools.partial(<bound method EDA.random_deletion of <data.augmentation.eda.EDA object at 0x7391dc5c6d20>>, p=0.05)] for training.
+[2025-09-15 14:57:08,766][model.build][INFO] - Building backbone model: model.siglip.modeling_siglip.SiglipModel
+[2025-09-15 14:57:16,600][model.build][INFO] - Name of position embeddings for text model: text_model.embeddings.position_embedding.weight
+[2025-09-15 14:57:16,600][model.build][INFO] - Name of token embeddings for text model: text_model.embeddings.token_embedding.weight
+[2025-09-15 14:57:16,601][model.build][INFO] - Name of position embeddings for image model: vision_model.embeddings.position_embedding.weight
+[2025-09-15 14:57:16,601][model.build][INFO] - Resized text_model.embeddings.token_embedding.weight for text model from 250000 to 250001
+[2025-09-15 14:57:21,840][root][INFO] - Logger setup:
+[2025-09-15 14:57:21,840][root][INFO] - Base config: m_siglip
+[2025-09-15 14:57:21,840][root][INFO] - Overrided config: {'img_size_str': '(256,256)', 'dataset': 'cuhk_pedes', 'dataset.sampler': 'identity', 'dataset.num_instance': 1, 'loss': 'irra', 'loss.softlabel_ratio': 0.0, 'trainer.max_epochs': 60, 'optimizer': 'irra_no_decay', 'optimizer.param_groups.default.lr': 1e-05}
+[2025-09-15 14:57:21,840][root][INFO] - Log directory: /mnt/nvme0/home/hoaixg/PERSON_RLF-main_Final/outputs/2025-09-15/14-57-06
+[2025-09-15 14:57:21,840][root][INFO] - Checkpoint path: /mnt/nvme0/home/hoaixg/PERSON_RLF-main_Final/outputs/2025-09-15/14-57-06/checkpoints
+Validation: |          | 0/? [00:00<?, ?it/s]Validation:   0%|          | 0/7 [00:00<?, ?it/s]Validation DataLoader 0:   0%|          | 0/7 [00:00<?, ?it/s]Validation DataLoader 0:  14%|█▍        | 1/7 [00:01<00:06,  0.87it/s]Validation DataLoader 0:  29%|██▊       | 2/7 [00:01<00:03,  1.47it/s]Validation DataLoader 0:  43%|████▎     | 3/7 [00:02<00:02,  1.42it/s]Validation DataLoader 0:  57%|█████▋    | 4/7 [00:02<00:02,  1.40it/s]Validation DataLoader 0:  71%|███████▏  | 5/7 [00:03<00:01,  1.38it/s]Validation DataLoader 0:  86%|████████▌ | 6/7 [00:04<00:00,  1.37it/s]Validation DataLoader 0: 100%|██████████| 7/7 [00:05<00:00,  1.39it/s]Validation DataLoader 0: |          | 8/? [00:05<00:00,  1.54it/s]    Validation DataLoader 0: |          | 9/? [00:05<00:00,  1.70it/s]Validation DataLoader 0: |          | 10/? [00:05<00:00,  1.88it/s]Validation DataLoader 0: |          | 11/? [00:05<00:00,  2.03it/s]Validation DataLoader 0: |          | 12/? [00:05<00:00,  2.16it/s]Validation DataLoader 0: |          | 13/? [00:05<00:00,  2.32it/s]Validation DataLoader 0: |          | 13/? [00:07<00:00,  1.63it/s]
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+     Validate metric           DataLoader 0
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+       val_i2t_R1            12.32921314239502
+       val_i2t_R10          31.099546432495117
+       val_i2t_R5           24.235525131225586
+       val_i2t_mAP           4.97825813293457
+      val_i2t_mINP          0.27701830863952637
+        val_score            6.773879528045654
+       val_t2i_R1            6.773879528045654
+       val_t2i_R10          18.762184143066406
+       val_t2i_R5           14.230018615722656
+       val_t2i_mAP           6.527834892272949
+      val_t2i_mINP           2.839146852493286
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+Training: |          | 0/? [00:00<?, ?it/s]Training:   0%|          | 0/2129 [00:00<?, ?it/s]Epoch 0:   0%|          | 0/2129 [00:00<?, ?it/s] [1;34mwandb[0m: 
+[1;34mwandb[0m: 🚀 View run [33mm_siglip_dataset_cuhk_pedes_dataset.num_instance_1_dataset.sampler_identity_img_size_str_(256,256)_loss_irra_loss.softlabel_ratio_0.0_optimizer_irra_no_decay_optimizer.param_groups.default.lr_1e-05_trainer.max_epochs_60[0m at: [34mhttps://wandb.ai/hoaihvan-hanoi-university-of-science-and-technology/PERSON_SEARCH/runs/emexq3uq[0m
+[1;34mwandb[0m: Find logs at: [1;35moutputs/2025-09-15/14-57-06/wandb/run-20250915_145722-emexq3uq/logs[0m
+Epoch 0:   0%|          | 0/2129 [00:04<?, ?it/s]
